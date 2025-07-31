@@ -1,9 +1,9 @@
 #include <thor/ui/UIManager.hpp>
+#include <thor/core/Error.hpp>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
-#include <stdexcept>
 
 namespace thor::ui {
 
@@ -32,12 +32,12 @@ bool UIManager::initialize(GLFWwindow* window) {
     // Setup Platform/Renderer backends
     const char* glsl_version = "#version 150";
     if (!ImGui_ImplGlfw_InitForOpenGL(window, true)) {
-        throw std::runtime_error("Failed to initialize ImGui GLFW backend");
+        throw thor::core::InitializationError("Failed to initialize ImGui GLFW backend");
     }
     
     if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
         ImGui_ImplGlfw_Shutdown();
-        throw std::runtime_error("Failed to initialize ImGui OpenGL3 backend");
+        throw thor::core::InitializationError("Failed to initialize ImGui OpenGL3 backend");
     }
     
     mInitialized = true;
@@ -80,9 +80,7 @@ void UIManager::render() {
 }
 
 void UIManager::showDemoWindow() {
-    if (mShowDemo) {
-        ImGui::ShowDemoWindow(&mShowDemo);
-    }
+    ImGui::ShowDemoWindow(&mShowDemo);
 }
 
 } // namespace thor::ui 

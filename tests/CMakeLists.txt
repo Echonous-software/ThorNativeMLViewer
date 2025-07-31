@@ -34,6 +34,7 @@ target_link_libraries(thor_tests
 target_sources(thor_tests
     PRIVATE
         test_main.cpp
+        test_error.cpp
 )
 
 # Register tests with CTest

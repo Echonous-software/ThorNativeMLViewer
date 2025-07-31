@@ -1,6 +1,6 @@
 #include <thor/rendering/GLContext.hpp>
+#include <thor/core/Error.hpp>
 #include <GLFW/glfw3.h>
-#include <stdexcept>
 #include <string>
 #include <fmt/format.h>
 
@@ -23,7 +23,7 @@ bool GLContext::initialize(int width, int height, const std::string& title) {
     
     // Initialize GLFW
     if (!glfwInit()) {
-        throw std::runtime_error("Failed to initialize GLFW");
+        throw thor::core::InitializationError("Failed to initialize GLFW");
     }
     
     // Configure GLFW for OpenGL 3.3 Core Profile
@@ -39,7 +39,7 @@ bool GLContext::initialize(int width, int height, const std::string& title) {
     mWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     if (!mWindow) {
         glfwTerminate();
-        throw std::runtime_error("Failed to create GLFW window");
+        throw thor::core::OpenGLError("Failed to create GLFW window");
     }
     
     // Make context current
@@ -55,7 +55,7 @@ bool GLContext::initialize(int width, int height, const std::string& title) {
     const char* version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
     if (!version) {
         shutdown();
-        throw std::runtime_error("Failed to get OpenGL version");
+        throw thor::core::OpenGLError("Failed to get OpenGL version");
     }
     
     mInitialized = true;
@@ -89,7 +89,7 @@ void GLContext::pollEvents() {
 }
 
 void GLContext::errorCallback(int error, const char* description) {
-    throw std::runtime_error(fmt::format("GLFW Error {}: {}", error, description));
+    throw thor::core::OpenGLError(fmt::format("GLFW Error {}: {}", error, description));
 }
 
 void GLContext::framebufferSizeCallback(GLFWwindow* window, int width, int height) {
