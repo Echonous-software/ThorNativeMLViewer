@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(ThorNativeMLViewer 
     VERSION 1.0.0
     DESCRIPTION "Native ML model visualization and debugging tool"
-    LANGUAGES CXX)
+    LANGUAGES C CXX)
 
 # Set C++20 standard
 set(CMAKE_CXX_STANDARD 20)
@@ -40,7 +40,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/third_party/glad/include
 )
 
 # Link libraries
@@ -67,6 +67,12 @@ target_sources(${PROJECT_NAME}
         src/rendering/GLContext.cpp
         src/ui/UIManager.cpp
         src/app/Application.cpp
+        src/data/ImageSequence.cpp
+        src/data/ImageLoader.cpp
+        src/data/DataManager.cpp
+        src/playback/PlaybackController.cpp
+        src/rendering/GLRenderer.cpp
+        src/third_party/glad/src/glad.c
 )
 
 # Enable testing

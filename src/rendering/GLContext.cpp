@@ -1,5 +1,6 @@
-#include <thor/rendering/GLContext.hpp>
-#include <thor/core/Error.hpp>
+#include <rendering/GLContext.hpp>
+#include <core/Error.hpp>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <string>
 #include <fmt/format.h>
@@ -50,6 +51,12 @@ bool GLContext::initialize(int width, int height, const std::string& title) {
     
     // Enable v-sync
     glfwSwapInterval(1);
+    
+    // Initialize GLAD
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        shutdown();
+        throw thor::core::OpenGLError("Failed to initialize GLAD");
+    }
     
     // Verify OpenGL version
     const char* version = reinterpret_cast<const char*>(glGetString(GL_VERSION));

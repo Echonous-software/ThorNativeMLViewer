@@ -16,6 +16,7 @@ N/A - Greenfield project
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | [Today's Date] | 1.0 | Initial Architecture Document | Winston (Architect) |
+| 2024-12-19 | 1.1 | Added binary file format byte ordering specification with little/big endian support | Winston (Architect) |
 
 ## High Level Architecture
 
@@ -120,6 +121,8 @@ See [Tech Stack](architecture/tech-stack.md) for details.
 - fps: `float` - Playback framerate
 
 **Design Note:** Scale and bias transformations are applied during rendering via GLSL shaders, not during data loading or storage. This preserves data integrity and enables real-time parameter adjustments.
+
+**Binary Format Note:** Raw pixel data is stored in little-endian byte ordering (MVP default, no file header). See DataManager Binary File Format Specification for implementation details.
 
 **Relationships:**
 - Loaded by ImageLoader
@@ -252,6 +255,37 @@ public:
 **Dependencies:** ImageLoader, DataExporter
 
 **Technology Stack:** C++20 filesystem, custom NPY writer
+
+#### Binary File Format Specification
+
+**MVP Byte Ordering:**
+- **Default**: Little-endian byte ordering (specified programmatically, not in file)
+- **No File Header**: Raw binary data only, dimensions and pixel type provided via API parameters
+- **Future**: Big-endian support can be added post-MVP via LoadImageSequence parameter
+
+**Byte Extraction Implementation:**
+```cpp
+// Little-endian 32-bit integer extraction (MVP default)
+uint32_t extractLittleEndian32(const uint8_t* data) {
+    return (data[0]<<0) | (data[1]<<8) | (data[2]<<16) | (data[3]<<24);
+}
+
+// Big-endian 32-bit integer extraction (future extension)
+uint32_t extractBigEndian32(const uint8_t* data) {
+    return (data[3]<<0) | (data[2]<<8) | (data[1]<<16) | (data[0]<<24);
+}
+```
+
+**Float32 Handling:**
+- Read as 32-bit integers using little-endian extraction, then reinterpret as float32
+- Maintain bit-exact representation during conversion
+- Preserve NaN and infinity values correctly
+
+**File Structure (MVP):**
+- No header or metadata
+- Raw pixel values in little-endian byte order
+- Dimensions (width, height, channels) and pixel type provided via LoadImageSequence() parameters
+- File size validation: `expected_size = width * height * channels * sizeof(pixel_type) * frame_count`
 
 ### PlaybackController
 

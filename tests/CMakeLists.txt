@@ -18,23 +18,46 @@ set_target_properties(thor_tests PROPERTIES
 target_include_directories(thor_tests
     PRIVATE
         ${CMAKE_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src/third_party/glad/include
 )
 
-# Link GoogleTest
+# Link GoogleTest and required libraries
 target_link_libraries(thor_tests
     PRIVATE
         GTest::gtest
         GTest::gtest_main
         GTest::gmock
         fmt::fmt
+        glfw
+        ${OPENGL_LIBRARIES}
 )
+
+# Platform-specific libraries for tests
+if(APPLE)
+    target_link_libraries(thor_tests
+        PRIVATE
+            "-framework CoreML"
+    )
+endif()
 
 # Add test source files
 target_sources(thor_tests
     PRIVATE
         test_main.cpp
         test_error.cpp
+        data/test_image_sequence.cpp
+        data/test_image_loader.cpp
+        data/test_data_manager.cpp
+        playback/test_playback_controller.cpp
+        rendering/test_gl_renderer.cpp
+        # Source files needed for testing
+        ${CMAKE_SOURCE_DIR}/src/data/ImageSequence.cpp
+        ${CMAKE_SOURCE_DIR}/src/data/ImageLoader.cpp
+        ${CMAKE_SOURCE_DIR}/src/data/DataManager.cpp
+        ${CMAKE_SOURCE_DIR}/src/playback/PlaybackController.cpp
+        ${CMAKE_SOURCE_DIR}/src/rendering/GLContext.cpp
+        ${CMAKE_SOURCE_DIR}/src/rendering/GLRenderer.cpp
+        ${CMAKE_SOURCE_DIR}/src/third_party/glad/src/glad.c
 )
 
 # Register tests with CTest

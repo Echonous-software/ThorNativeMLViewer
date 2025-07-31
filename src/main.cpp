@@ -1,5 +1,5 @@
-#include <thor/app/Application.hpp>
-#include <thor/core/Error.hpp>
+#include <app/Application.hpp>
+#include <core/Error.hpp>
 #include <iostream>
 #include <exception>
 
