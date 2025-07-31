@@ -85,7 +85,7 @@ graph TB
 
 ## Tech Stack
 
-See [Tech Stack](tech-stack.md) for details.
+See [Tech Stack](architecture/tech-stack.md) for details.
 
 ## Data Models
 
@@ -377,7 +377,7 @@ N/A - No database required. All data is processed in-memory with file-based inpu
 
 ## Source Tree
 
-See [Source Tree](source-tree.md) for details.
+See [Source Tree](architecture/source-tree.md) for details.
 
 ## Infrastructure and Deployment
 
@@ -441,7 +441,7 @@ Developer Machine → Local Build → Local Test → Package (.app) → Manual D
 
 ## Coding Standards
 
-See [Coding Standards](coding-standards.md) for details.
+See [Coding Standards](architecture/coding-standards.md) for details.
 
 ## Test Strategy and Standards
 
