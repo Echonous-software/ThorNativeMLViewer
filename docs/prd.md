@@ -113,8 +113,11 @@ so that I can inspect and understand my data in detail.
 **Acceptance Criteria:**
 1. Show a zoom control to zoom in and out on the main image
 2. Display input metadata (dimensions, format, memory size)
-3. Inspect a particular pixel value of input image, showing the original input value before scale/gain is applied
+3. Inspect a particular pixel value of input image by mouse, showing the original input value without scaling by min/max
 4. Display performance metrics of fps and memory usage
+5. Maintain original aspect ratio of image when scaling to fit display area
+6. Always center the image within the display window
+7. Provide "zoom to fit" functionality as the default zoom level
 
 ### Story 1.4: CoreML Model Integration
 
