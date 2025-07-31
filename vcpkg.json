@@ -1,0 +1,29 @@
+{
+  "name": "thor-native-ml-viewer",
+  "version": "1.0.0",
+  "description": "Native ML model visualization and debugging tool",
+  "dependencies": [
+    {
+      "name": "fmt",
+      "version>=": "10.0.0"
+    },
+    {
+      "name": "imgui",
+      "version>=": "1.91.9",
+      "features": ["opengl3-binding", "glfw-binding"]
+    },
+    {
+      "name": "glfw3",
+      "version>=": "3.4"
+    },
+    {
+      "name": "opengl",
+      "platform": "!osx"
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.14.0"
+    }
+  ],
+  "builtin-baseline": "897ba2ab4c4c776b985ab1f599548fcf3ae598ba"
+} 
