@@ -41,7 +41,7 @@ ThorNativeMLViewer is a native desktop application built with C++20 using a modu
 graph TB
     subgraph "User Interface Layer"
         UI[ImGui Interface]
-        GL[OpenGL Renderer]
+        GL[GLRenderer]
     end
     
     subgraph "Application Core"
@@ -111,13 +111,15 @@ See [Tech Stack](architecture/tech-stack.md) for details.
 **Purpose:** Owns multi-frame image data with metadata
 
 **Key Attributes:**
-- frameData: `std::vector<uint8_t>` or `std::vector<float>` - Contiguous frame storage
+- frameData: `std::vector<uint8_t>` or `std::vector<float>` - Contiguous frame storage (raw, unmodified pixel data)
 - frameCount: `uint32_t` - Number of frames
 - width: `uint32_t` - Frame width in pixels
 - height: `uint32_t` - Frame height in pixels
 - channels: `uint32_t` - Number of channels per frame
 - pixelType: `ImageDataType` - UINT8 or FLOAT32
 - fps: `float` - Playback framerate
+
+**Design Note:** Scale and bias transformations are applied during rendering via GLSL shaders, not during data loading or storage. This preserves data integrity and enables real-time parameter adjustments.
 
 **Relationships:**
 - Loaded by ImageLoader
@@ -147,7 +149,7 @@ See [Tech Stack](architecture/tech-stack.md) for details.
 - modelPath: `std::filesystem::path` - Path to model file
 - inputShape: `std::vector<int64_t>` - Expected input dimensions
 - outputShape: `std::vector<int64_t>` - Output dimensions
-- inputNormalization: `NormalizationMode` - Scale and bias terms
+- inputNormalization: `NormalizationMode` - Model input normalization settings (e.g., [0-255] to [0-1])
 - name: `std::string` - Model name
 - description: `std::string` - Model description
 - version: `std::string` - Model version
@@ -266,19 +268,20 @@ public:
 
 **Technology Stack:** C++20 std::chrono for timing
 
-### Renderer
+### GLRenderer
 
-**Responsibility:** Low-level OpenGL rendering operations and texture management
+**Responsibility:** Low-level OpenGL rendering operations and texture management with shader-based image processing
 
 **Key Interfaces:**
 - CreateTexture(imageView) - Create OpenGL texture from image
 - UpdateTexture(id, imageView) - Update existing texture
-- RenderTexturedQuad() - Draw image to screen
+- RenderTexturedQuad(scale, bias) - Draw image to screen with shader-based scale/bias
+- SetRenderingParameters(scale, bias) - Configure shader uniforms for image display
 - Initialize() - Setup OpenGL state
 
-**Dependencies:** OpenGL
+**Dependencies:** OpenGL via GLFW headers
 
-**Technology Stack:** OpenGL 3.3, GLSL shaders
+**Technology Stack:** OpenGL 3.3, GLSL shaders with scale/bias uniforms
 
 ### Component Diagrams
 
@@ -290,7 +293,7 @@ graph LR
         ML[MLProviderManager]
         DM[DataManager]
         PC[PlaybackController]
-        R[Renderer]
+        R[GLRenderer]
     end
     
     subgraph "ML Providers"
@@ -484,7 +487,9 @@ See [Coding Standards](architecture/coding-standards.md) for details.
 ### Test Data Management
 
 - **Strategy:** Fixtures with known outputs
-- **Fixtures:** `tests/fixtures/` directory
+- **Fixtures:** `tests/fixtures/` directory for unit test fixtures
+- **Sample Data:** `data/samples/` directory for integration test sequences
+- **Test Models:** `data/models/` directory for CoreML test models
 - **Factories:** Test data builders for complex objects
 - **Cleanup:** Automatic via RAII test fixtures
 

@@ -20,7 +20,7 @@ ThorNativeMLViewer/
 │       │   ├── Model.hpp
 │       │   └── InferenceResult.hpp
 │       └── rendering/         # Rendering interfaces
-│           ├── Renderer.hpp
+│           ├── GLRenderer.hpp
 │           └── Texture.hpp
 ├── src/                       # Implementation files
 │   ├── main.cpp              # Application entry point
@@ -56,13 +56,13 @@ ThorNativeMLViewer/
 │   ├── rendering/            # Rendering and graphics
 │   │   ├── GLContext.cpp
 │   │   ├── GLContext.hpp
-│   │   ├── Renderer.cpp
-│   │   ├── Renderer.hpp
+│   │   ├── GLRenderer.cpp
+│   │   ├── GLRenderer.hpp
 │   │   ├── Texture.cpp
 │   │   ├── Texture.hpp
 │   │   └── shaders/          # GLSL shaders
-│   │       ├── basic.vert
-│   │       └── basic.frag
+│   │       ├── image.vert        # Vertex shader for image display
+│   │       └── image.frag        # Fragment shader with scale/bias uniforms
 │   └── core/                 # Core utilities
 │       ├── Math.hpp            # Custom math utilities
 │       └── NPYWriter.cpp     # Custom NPY format writer
@@ -76,6 +76,11 @@ ThorNativeMLViewer/
 ├── resources/                # Application resources
 │   ├── fonts/
 │   └── icons/
+├── data/                     # Binary data files and assets
+│   ├── clips/                # Image sequence binary files (*.bin)
+│   ├── models/               # CoreML model files (*.mlpackage)
+│   ├── samples/              # Sample/test data for development
+│   └── exports/              # Runtime-generated export files (*.npy, *.npz)
 └── docs/                     # Documentation
     ├── prd.md
     └── architecture.md

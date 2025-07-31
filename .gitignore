@@ -91,3 +91,10 @@ node_modules/
 # Core ML models (if large)
 *.mlmodel
 *.mlpackage
+
+# Data directory runtime files
+data/exports/
+
+# Large binary sequence files (but allow small samples)
+data/clips/*.bin
+!data/samples/*.bin
