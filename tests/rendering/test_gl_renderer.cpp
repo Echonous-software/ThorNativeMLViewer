@@ -621,12 +621,11 @@ TEST_F(GLRendererTest, TransformMatrixCreation) {
     EXPECT_FLOAT_EQ(identity.data[13], 0.0f);  // Translation Y
     
     // Test world to screen transformation
-    auto worldToScreen = thor::rendering::TransformMatrix::createWorldToScreen(
-        0.0f, 0.0f, 100.0f, 100.0f, 800, 600);
+    auto worldToScreen = thor::rendering::TransformMatrix::createWorldToScreen(800, 600);
     
     // Verify the matrix has reasonable transformation values
-    EXPECT_GT(worldToScreen.data[0], 0.0f);  // Scale X should be positive
-    EXPECT_GT(worldToScreen.data[5], 0.0f);  // Scale Y should be positive
+    EXPECT_NE(worldToScreen.data[0], 0.0f);
+    EXPECT_NE(worldToScreen.data[5], 0.0f);
     
     // Test image transformation
     auto imageTransform = thor::rendering::TransformMatrix::createImageTransform(
@@ -635,4 +634,22 @@ TEST_F(GLRendererTest, TransformMatrixCreation) {
     // Verify the matrix has reasonable transformation values
     EXPECT_GT(imageTransform.data[0], 0.0f);  // Scale X should be positive
     EXPECT_GT(imageTransform.data[5], 0.0f);  // Scale Y should be positive
+}
+
+TEST_F(GLRendererTest, TransformMatrixInversionAndPointTransform) {
+    auto world_to_screen = thor::rendering::TransformMatrix::createWorldToScreen(800, 600);
+    auto image_transform = thor::rendering::TransformMatrix::createImageTransform(256, 256, 1.0f, true, 800, 600);
+
+    auto final_transform = world_to_screen * image_transform;
+    auto inverse_transform = final_transform.inverse();
+
+    // Test a point at the center of the screen
+    float sx = 0.0f, sy = 0.0f;
+    auto image_pos = inverse_transform.transformPoint(sx, sy);
+    image_pos.x += 0.5f;
+    image_pos.y += 0.5f;
+
+    // Should be near the center of the image
+    EXPECT_NEAR(image_pos.x, 0.5f, 1e-5);
+    EXPECT_NEAR(image_pos.y, 0.5f, 1e-5);
 } 

@@ -81,6 +81,7 @@ void Application::wireUICallbacks() {
     mUIManager->setFPSChangeCallback([this](float fps) { onFPSChange(fps); });
     mUIManager->setMinMaxChangeCallback([this](float minValue, float maxValue) { onMinMaxChange(minValue, maxValue); });
     mUIManager->setZoomChangeCallback([this](float zoomFactor, bool isZoomToFit) { onZoomChange(zoomFactor, isZoomToFit); });
+    mUIManager->setPixelInspectCallback([this](float x, float y) { onPixelInspect(x, y); });
     
     // Set up playback controller callback
     auto& playbackController = mDataManager->getPlaybackController();
@@ -350,6 +351,67 @@ void Application::onZoomChange(float zoomFactor, bool isZoomToFit) {
     // The zoom parameters are automatically used in renderFrame() 
     // via the UIManager state, so no additional action needed here.
     // This callback could be used for logging or other zoom-related actions.
+}
+
+void Application::onPixelInspect(float x, float y) {
+    if (!mDataManager->hasSequence()) {
+        return;
+    }
+
+    auto imageView = mDataManager->getCurrentImageView();
+    if (!imageView.has_value()) {
+        return;
+    }
+
+    auto& uiState = mUIManager->getUIState();
+    int viewportWidth, viewportHeight;
+    mGLRenderer->getViewport(viewportWidth, viewportHeight);
+
+    auto transform = thor::rendering::TransformMatrix::createImageTransform(
+        imageView->getWidth(),
+        imageView->getHeight(),
+        uiState.zoomFactor,
+        uiState.isZoomToFit,
+        viewportWidth,
+        viewportHeight
+    );
+
+    auto world_to_screen = thor::rendering::TransformMatrix::createWorldToScreen(viewportWidth, viewportHeight);
+    auto final_transform = world_to_screen * transform;
+    auto screen_to_final = final_transform.inverse();
+
+    float sx = (x / viewportWidth) * 2.0f - 1.0f;
+    float sy = 1.0f - (y / viewportHeight) * 2.0f;
+
+    auto image_pos = screen_to_final.transformPoint(sx, sy);
+    image_pos.x += 0.5f;
+    image_pos.y += 0.5f;
+
+    int img_x = static_cast<int>(image_pos.x * imageView->getWidth());
+    int img_y = static_cast<int>(image_pos.y * imageView->getHeight());
+
+    std::optional<std::vector<float>> pixelValue;
+    if (img_x >= 0 && img_x < imageView->getWidth() && img_y >= 0 && img_y < imageView->getHeight()) {
+        const void* pixelData = imageView->getPixel(img_x, img_y);
+        if (pixelData) {
+            std::vector<float> values;
+            uint32_t channels = imageView->getChannels();
+            if (imageView->getPixelType() == thor::data::ImageDataType::UINT8) {
+                const uint8_t* p = static_cast<const uint8_t*>(pixelData);
+                for (uint32_t i = 0; i < channels; ++i) {
+                    values.push_back(static_cast<float>(p[i]));
+                }
+            } else {
+                const float* p = static_cast<const float*>(pixelData);
+                for (uint32_t i = 0; i < channels; ++i) {
+                    values.push_back(p[i]);
+                }
+            }
+            pixelValue = values;
+        }
+    }
+
+    mUIManager->updatePixelInfo({x, y}, pixelValue);
 }
 
 } // namespace thor::app 

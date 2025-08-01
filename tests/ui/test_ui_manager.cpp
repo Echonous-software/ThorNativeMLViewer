@@ -49,11 +49,20 @@ protected:
         zoomCallbackCount = 0;
         lastZoomFactor = 0.0f;
         lastZoomToFit = false;
+        int pixelInspectCallbackCount = 0;
+        float lastMouseX = 0.0f;
+        float lastMouseY = 0.0f;
         
         uiManager->setZoomChangeCallback([this](float zoom, bool toFit) {
-            zoomCallbackCount++;
-            lastZoomFactor = zoom;
-            lastZoomToFit = toFit;
+            this->zoomCallbackCount++;
+            this->lastZoomFactor = zoom;
+            this->lastZoomToFit = toFit;
+        });
+
+        uiManager->setPixelInspectCallback([this](float x, float y) {
+            this->pixelInspectCallbackCount++;
+            this->lastMouseX = x;
+            this->lastMouseY = y;
         });
     }
     
@@ -64,6 +73,9 @@ protected:
     int zoomCallbackCount = 0;
     float lastZoomFactor = 0.0f;
     bool lastZoomToFit = false;
+    int pixelInspectCallbackCount = 0;
+    float lastMouseX = 0.0f;
+    float lastMouseY = 0.0f;
 };
 
 // Test zoom state initialization
@@ -253,4 +265,35 @@ TEST_F(UIManagerTest, ZoomFactorScaling) {
     
     uiManager->zoomOut();
     EXPECT_FLOAT_EQ(uiManager->getUIState().zoomFactor, baseZoom / 1.25f);
+} 
+
+TEST_F(UIManagerTest, UpdatePixelInfo) {
+    ImVec2 mousePosition{100.0f, 200.0f};
+    std::optional<std::vector<float>> pixelValue = {{0.1f, 0.2f, 0.3f}};
+
+    uiManager->updatePixelInfo(mousePosition, pixelValue);
+
+    const auto& state = uiManager->getUIState();
+    EXPECT_FLOAT_EQ(state.mousePosition.x, 100.0f);
+    EXPECT_FLOAT_EQ(state.mousePosition.y, 200.0f);
+    ASSERT_TRUE(state.pixelValue.has_value());
+    ASSERT_EQ(state.pixelValue.value().size(), 3);
+    EXPECT_FLOAT_EQ(state.pixelValue.value()[0], 0.1f);
+    EXPECT_FLOAT_EQ(state.pixelValue.value()[1], 0.2f);
+    EXPECT_FLOAT_EQ(state.pixelValue.value()[2], 0.3f);
+}
+
+TEST_F(UIManagerTest, PixelInspectorCallback) {
+    uiManager->newFrame();
+    ImGui::Begin("Test Window");
+    // Simulate mouse hover to trigger callback
+    ImGui::GetIO().MousePos = ImVec2(150.0f, 250.0f);
+    ImGui::GetIO().MouseWheel = 0; // ensure no zoom
+    uiManager->renderMetadataDisplay();
+    ImGui::End();
+    uiManager->render(); // This will process the frame and call renderZoomControls
+
+    EXPECT_EQ(pixelInspectCallbackCount, 1);
+    EXPECT_FLOAT_EQ(lastMouseX, 150.0f);
+    EXPECT_FLOAT_EQ(lastMouseY, 250.0f);
 } 

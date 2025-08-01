@@ -25,6 +25,10 @@ struct RenderingParameters {
     RenderingParameters(float min, float max, uint32_t ch) : minValue(min), maxValue(max), channels(ch) {}
 };
 
+// Vector types for math operations
+struct Vec2 { float x, y; };
+struct Vec4 { float x, y, z, w; };
+
 // Transformation matrix for coordinate space conversions
 struct TransformMatrix {
     float data[16] = {
@@ -35,11 +39,14 @@ struct TransformMatrix {
     };
 
     TransformMatrix() = default;
+
+    TransformMatrix operator*(const TransformMatrix& other) const;
+    TransformMatrix inverse() const;
+    Vec4 operator*(const Vec4& v) const;
+    Vec2 transformPoint(float x, float y) const;
     
     // Create transformation matrix from world space position and scale
     static TransformMatrix createWorldToScreen(
-        float worldX, float worldY,           // Position in world space
-        float scaleX, float scaleY,           // Scale factors
         int viewportWidth, int viewportHeight // Viewport dimensions for screen space conversion
     );
     

@@ -2,6 +2,9 @@
 
 #include <functional>
 #include <optional>
+#include <vector>
+
+#include <imgui.h>
 
 // Forward declarations
 struct GLFWwindow;
@@ -26,13 +29,17 @@ struct PlaybackUIState {
     float minValue = 0.0f;
     float maxValue = 1.0f;
     bool showControls = true;
-    bool showImageWindow = true;
+    bool showMetadataWindow = true;
     
     // Zoom controls
     float zoomFactor = 1.0f;
     bool isZoomToFit = true;
     float zoomMin = 0.1f;
     float zoomMax = 10.0f;
+
+    // Pixel inspector
+    ImVec2 mousePosition;
+    std::optional<std::vector<float>> pixelValue;
 };
 
 class UIManager {
@@ -54,7 +61,7 @@ public:
     
     // Playback UI controls
     void renderPlaybackControls();
-    void renderImageDisplay();
+    void renderMetadataDisplay();
     
     // Integration with data and rendering components
     void setDataManager(thor::data::DataManager* dataManager);
@@ -72,10 +79,12 @@ public:
     void setFPSChangeCallback(std::function<void(float)> callback) { mFPSChangeCallback = callback; }
     void setMinMaxChangeCallback(std::function<void(float, float)> callback) { mMinMaxChangeCallback = callback; }
     void setZoomChangeCallback(std::function<void(float, bool)> callback) { mZoomChangeCallback = callback; }
+    void setPixelInspectCallback(std::function<void(float, float)> callback) { mPixelInspectCallback = callback; }
     
     // Update UI state from external sources
     void updatePlaybackState(bool isPlaying, uint32_t currentFrame, uint32_t totalFrames);
     void updateRenderingParameters(const thor::rendering::RenderingParameters& params);
+    void updatePixelInfo(const ImVec2& mousePosition, const std::optional<std::vector<float>>& pixelValue);
     
     // Zoom control methods
     void zoomIn();
@@ -104,6 +113,7 @@ private:
     std::function<void(float)> mFPSChangeCallback;
     std::function<void(float, float)> mMinMaxChangeCallback;
     std::function<void(float, bool)> mZoomChangeCallback;
+    std::function<void(float, float)> mPixelInspectCallback;
     
     // Helper methods
     void renderPlayPauseButton();
@@ -111,6 +121,7 @@ private:
     void renderFrameInfo();
     void renderFPSControl();
     void renderZoomControls();
+    void renderPixelInspector();
     void invokeCallbackSafely(const std::function<void()>& callback);
     template<typename... Args>
     void invokeCallbackSafely(const std::function<void(Args...)>& callback, Args... args);

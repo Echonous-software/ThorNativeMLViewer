@@ -73,6 +73,7 @@ private:
     void onFPSChange(float fps);
     void onMinMaxChange(float minValue, float maxValue);
     void onZoomChange(float zoomFactor, bool isZoomToFit);
+    void onPixelInspect(float x, float y);
     
     // Component initialization and wiring
     bool initializeComponents();

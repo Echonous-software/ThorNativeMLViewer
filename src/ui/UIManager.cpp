@@ -7,8 +7,31 @@
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
 #include <algorithm>
+#include <string>
+#include <sstream>
+#include <iomanip>
 
 namespace thor::ui {
+
+namespace {
+    std::string formatMemorySize(size_t bytes) {
+        if (bytes < 1024) {
+            return std::to_string(bytes) + " B";
+        }
+        
+        float size_kb = bytes / 1024.0f;
+        if (size_kb < 1024.0f) {
+            std::stringstream ss;
+            ss << std::fixed << std::setprecision(2) << size_kb << " KB";
+            return ss.str();
+        }
+        
+        float size_mb = size_kb / 1024.0f;
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << size_mb << " MB";
+        return ss.str();
+    }
+}
 
 UIManager::UIManager() 
     : mInitialized(false)
@@ -82,8 +105,8 @@ void UIManager::render() {
     }
     
     // Render image display window
-    if (mUIState.showImageWindow) {
-        renderImageDisplay();
+    if (mUIState.showMetadataWindow) {
+        renderMetadataDisplay();
     }
     
     // Rendering
@@ -141,13 +164,13 @@ void UIManager::renderPlaybackControls() {
     
     ImGui::Text("  |  ");
     ImGui::SameLine();
-    ImGui::Checkbox("Image Window", &mUIState.showImageWindow);
+    ImGui::Checkbox("Image Window", &mUIState.showMetadataWindow);
     
     ImGui::End();
 }
 
-void UIManager::renderImageDisplay() {
-    ImGui::Begin("Image Display", &mUIState.showImageWindow, ImGuiWindowFlags_AlwaysAutoResize);
+void UIManager::renderMetadataDisplay() {
+    ImGui::Begin("Metadata", &mUIState.showMetadataWindow, ImGuiWindowFlags_AlwaysAutoResize);
     
     if (mDataManager && mDataManager->hasSequence()) {
         auto imageView = mDataManager->getCurrentImageView();
@@ -158,6 +181,7 @@ void UIManager::renderImageDisplay() {
                        imageView->getWidth(), 
                        imageView->getHeight(), 
                        imageView->getChannels());
+            ImGui::Text("Memory: %s", formatMemorySize(imageView->getDataSizeBytes()).c_str());
             ImGui::Text("Type: %s", 
                        imageView->getPixelType() == thor::data::ImageDataType::UINT8 ? "UINT8" : "FLOAT32");
             
@@ -193,6 +217,11 @@ void UIManager::renderImageDisplay() {
             
             // Zoom Controls
             renderZoomControls();
+            
+            ImGui::Separator();
+
+            // Pixel Inspector
+            renderPixelInspector();
         } else {
             ImGui::Text("No image data available");
         }
@@ -279,8 +308,17 @@ void UIManager::renderFPSControl() {
 void UIManager::renderZoomControls() {
     ImGui::Text("Zoom: %.1fx", mUIState.zoomFactor);
     
+    if (ImGui::IsWindowHovered()) {
+        if (ImGui::GetIO().MouseWheel > 0) zoomIn();
+        if (ImGui::GetIO().MouseWheel < 0) zoomOut();
+
+        if (mPixelInspectCallback) {
+            invokeCallbackSafely(mPixelInspectCallback, ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+        }
+    }
+
     ImGui::SameLine();
-    if (ImGui::Button("Zoom In") || (ImGui::IsWindowHovered() && ImGui::GetIO().MouseWheel > 0)) {
+    if (ImGui::Button("Zoom In")) {
         zoomIn();
     }
     
@@ -301,6 +339,24 @@ void UIManager::renderZoomControls() {
     }
 }
 
+void UIManager::renderPixelInspector() {
+    ImGui::Text("Pixel Inspector");
+    ImGui::Text("Mouse Position: (%.1f, %.1f)", mUIState.mousePosition.x, mUIState.mousePosition.y);
+
+    if (mUIState.pixelValue.has_value()) {
+        const auto& p_val = mUIState.pixelValue.value();
+        if (p_val.size() == 1) {
+            ImGui::Text("Pixel Value: %.3f", p_val[0]);
+        } else if (p_val.size() == 3) {
+            ImGui::Text("Pixel Value: (%.3f, %.3f, %.3f)", p_val[0], p_val[1], p_val[2]);
+        } else if (p_val.size() == 4) {
+            ImGui::Text("Pixel Value: (%.3f, %.3f, %.3f, %.3f)", p_val[0], p_val[1], p_val[2], p_val[3]);
+        }
+    } else {
+        ImGui::Text("Pixel Value: N/A");
+    }
+}
+
 void UIManager::setDataManager(thor::data::DataManager* dataManager) {
     mDataManager = dataManager;
 }
@@ -318,6 +374,11 @@ void UIManager::updatePlaybackState(bool isPlaying, uint32_t currentFrame, uint3
 void UIManager::updateRenderingParameters(const thor::rendering::RenderingParameters& params) {
     mUIState.minValue = params.minValue;
     mUIState.maxValue = params.maxValue;
+}
+
+void UIManager::updatePixelInfo(const ImVec2& mousePosition, const std::optional<std::vector<float>>& pixelValue) {
+    mUIState.mousePosition = mousePosition;
+    mUIState.pixelValue = pixelValue;
 }
 
 void UIManager::showDemoWindow() {
