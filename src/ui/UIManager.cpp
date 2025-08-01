@@ -188,6 +188,11 @@ void UIManager::renderImageDisplay() {
             if ((minChanged || maxChanged) && mMinMaxChangeCallback) {
                 invokeCallbackSafely(mMinMaxChangeCallback, mUIState.minValue, mUIState.maxValue);
             }
+            
+            ImGui::Separator();
+            
+            // Zoom Controls
+            renderZoomControls();
         } else {
             ImGui::Text("No image data available");
         }
@@ -271,6 +276,31 @@ void UIManager::renderFPSControl() {
     }
 }
 
+void UIManager::renderZoomControls() {
+    ImGui::Text("Zoom: %.1fx", mUIState.zoomFactor);
+    
+    ImGui::SameLine();
+    if (ImGui::Button("Zoom In") || (ImGui::IsWindowHovered() && ImGui::GetIO().MouseWheel > 0)) {
+        zoomIn();
+    }
+    
+    ImGui::SameLine();
+    if (ImGui::Button("Zoom Out") || (ImGui::IsWindowHovered() && ImGui::GetIO().MouseWheel < 0)) {
+        zoomOut();
+    }
+    
+    ImGui::SameLine();
+    if (ImGui::Button("Fit to Window")) {
+        zoomToFit();
+    }
+    
+    // Show zoom to fit status
+    if (mUIState.isZoomToFit) {
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f), "[Fit]");
+    }
+}
+
 void UIManager::setDataManager(thor::data::DataManager* dataManager) {
     mDataManager = dataManager;
 }
@@ -292,6 +322,53 @@ void UIManager::updateRenderingParameters(const thor::rendering::RenderingParame
 
 void UIManager::showDemoWindow() {
     // Demo window functionality removed
+}
+
+void UIManager::zoomIn() {
+    float newZoom = mUIState.zoomFactor * 1.25f;
+    newZoom = std::min(newZoom, mUIState.zoomMax);
+    if (newZoom != mUIState.zoomFactor) {
+        mUIState.zoomFactor = newZoom;
+        mUIState.isZoomToFit = false;
+        invokeCallbackSafely(mZoomChangeCallback, mUIState.zoomFactor, mUIState.isZoomToFit);
+    }
+}
+
+void UIManager::zoomOut() {
+    float newZoom = mUIState.zoomFactor / 1.25f;
+    newZoom = std::max(newZoom, mUIState.zoomMin);
+    if (newZoom != mUIState.zoomFactor) {
+        mUIState.zoomFactor = newZoom;
+        mUIState.isZoomToFit = false;
+        invokeCallbackSafely(mZoomChangeCallback, mUIState.zoomFactor, mUIState.isZoomToFit);
+    }
+}
+
+void UIManager::zoomToFit() {
+    mUIState.isZoomToFit = true;
+    invokeCallbackSafely(mZoomChangeCallback, mUIState.zoomFactor, mUIState.isZoomToFit);
+}
+
+void UIManager::setZoom(float zoomFactor) {
+    float newZoom = std::clamp(zoomFactor, mUIState.zoomMin, mUIState.zoomMax);
+    bool zoomChanged = (newZoom != mUIState.zoomFactor);
+    bool zoomToFitChanged = mUIState.isZoomToFit;
+    
+    mUIState.zoomFactor = newZoom;
+    mUIState.isZoomToFit = false;
+    
+    // Trigger callback if either zoom factor or zoom-to-fit mode changed
+    if (zoomChanged || zoomToFitChanged) {
+        invokeCallbackSafely(mZoomChangeCallback, mUIState.zoomFactor, mUIState.isZoomToFit);
+    }
+}
+
+void UIManager::handleMouseWheel(float yOffset) {
+    if (yOffset > 0) {
+        zoomIn();
+    } else if (yOffset < 0) {
+        zoomOut();
+    }
 }
 
 void UIManager::invokeCallbackSafely(const std::function<void()>& callback) {

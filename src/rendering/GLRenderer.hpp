@@ -18,9 +18,37 @@ constexpr TextureID INVALID_TEXTURE_ID = 0;
 struct RenderingParameters {
     float minValue = 0.0f;
     float maxValue = 1.0f;
+    uint32_t channels = 3;
 
     RenderingParameters() = default;
     RenderingParameters(float min, float max) : minValue(min), maxValue(max) {}
+    RenderingParameters(float min, float max, uint32_t ch) : minValue(min), maxValue(max), channels(ch) {}
+};
+
+// Transformation matrix for coordinate space conversions
+struct TransformMatrix {
+    float data[16] = {
+        1.0f, 0.0f, 0.0f, 0.0f,  // Column 0
+        0.0f, 1.0f, 0.0f, 0.0f,  // Column 1
+        0.0f, 0.0f, 1.0f, 0.0f,  // Column 2
+        0.0f, 0.0f, 0.0f, 1.0f   // Column 3 (identity matrix)
+    };
+
+    TransformMatrix() = default;
+    
+    // Create transformation matrix from world space position and scale
+    static TransformMatrix createWorldToScreen(
+        float worldX, float worldY,           // Position in world space
+        float scaleX, float scaleY,           // Scale factors
+        int viewportWidth, int viewportHeight // Viewport dimensions for screen space conversion
+    );
+    
+    // Create transformation for image centering with zoom
+    static TransformMatrix createImageTransform(
+        int imageWidth, int imageHeight,      // Image dimensions
+        float zoomFactor, bool zoomToFit,     // Zoom parameters
+        int viewportWidth, int viewportHeight // Viewport dimensions
+    );
 };
 
 // OpenGL renderer for texture management and shader-based image processing
@@ -47,19 +75,14 @@ public:
     void updateTexture(TextureID textureId, const thor::data::ImageView& imageView);
     void deleteTexture(TextureID textureId);
     
-    // Rendering operations
-    void renderTexturedQuad(TextureID textureId, const RenderingParameters& params = {});
-    void renderTexturedQuad(TextureID textureId, float minValue, float maxValue);
-    void renderTexturedQuad(TextureID textureId, uint32_t channels, const RenderingParameters& params = {});
-    
-    // Rendering parameters
-    void setRenderingParameters(const RenderingParameters& params);
-    void setRenderingParameters(float minValue, float maxValue);
-    const RenderingParameters& getRenderingParameters() const { return mRenderingParams; }
+    // Modern matrix-based rendering
+    void renderQuadAt(TextureID textureId, const TransformMatrix& transform, 
+                     const RenderingParameters& params = {});
     
     // Viewport management
     void setViewport(int width, int height);
     void getViewport(int& width, int& height) const;
+    void updateViewportFromGL(); // Update stored viewport from current OpenGL state
     
     // Resource queries
     bool isValidTexture(TextureID textureId) const;
@@ -75,6 +98,7 @@ private:
     int mMaxValueUniform;
     int mTextureUniform;
     int mChannelsUniform;
+    int mTransformUniform;     // Model-to-screen transformation matrix
     int mPositionAttribute;
     int mTexCoordAttribute;
     
@@ -82,9 +106,6 @@ private:
     uint32_t mVAO;  // Vertex Array Object
     uint32_t mVBO;  // Vertex Buffer Object
     uint32_t mEBO;  // Element Buffer Object
-    
-    // Current rendering parameters
-    RenderingParameters mRenderingParams;
     
     // Viewport dimensions
     int mViewportWidth;

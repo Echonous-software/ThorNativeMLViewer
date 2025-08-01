@@ -27,6 +27,12 @@ struct PlaybackUIState {
     float maxValue = 1.0f;
     bool showControls = true;
     bool showImageWindow = true;
+    
+    // Zoom controls
+    float zoomFactor = 1.0f;
+    bool isZoomToFit = true;
+    float zoomMin = 0.1f;
+    float zoomMax = 10.0f;
 };
 
 class UIManager {
@@ -65,10 +71,18 @@ public:
     void setFrameSetCallback(std::function<void(uint32_t)> callback) { mFrameSetCallback = callback; }
     void setFPSChangeCallback(std::function<void(float)> callback) { mFPSChangeCallback = callback; }
     void setMinMaxChangeCallback(std::function<void(float, float)> callback) { mMinMaxChangeCallback = callback; }
+    void setZoomChangeCallback(std::function<void(float, bool)> callback) { mZoomChangeCallback = callback; }
     
     // Update UI state from external sources
     void updatePlaybackState(bool isPlaying, uint32_t currentFrame, uint32_t totalFrames);
     void updateRenderingParameters(const thor::rendering::RenderingParameters& params);
+    
+    // Zoom control methods
+    void zoomIn();
+    void zoomOut();
+    void zoomToFit();
+    void setZoom(float zoomFactor);
+    void handleMouseWheel(float yOffset);
     
     void showDemoWindow();
 
@@ -89,12 +103,14 @@ private:
     std::function<void(uint32_t)> mFrameSetCallback;
     std::function<void(float)> mFPSChangeCallback;
     std::function<void(float, float)> mMinMaxChangeCallback;
+    std::function<void(float, bool)> mZoomChangeCallback;
     
     // Helper methods
     void renderPlayPauseButton();
     void renderFrameNavigation();
     void renderFrameInfo();
     void renderFPSControl();
+    void renderZoomControls();
     void invokeCallbackSafely(const std::function<void()>& callback);
     template<typename... Args>
     void invokeCallbackSafely(const std::function<void(Args...)>& callback, Args... args);

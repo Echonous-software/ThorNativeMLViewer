@@ -14,7 +14,9 @@ Application::Application()
     , mUIManager(std::make_unique<thor::ui::UIManager>())
     , mDataManager(std::make_unique<thor::data::DataManager>())
     , mInitialized(false)
-    , mCurrentTextureId(0) {
+    , mCurrentTextureId(0)
+    , mRenderingMinValue(0.0f)
+    , mRenderingMaxValue(1.0f) {
 }
 
 Application::~Application() {
@@ -78,6 +80,7 @@ void Application::wireUICallbacks() {
     mUIManager->setFrameSetCallback([this](uint32_t frame) { onSetFrame(frame); });
     mUIManager->setFPSChangeCallback([this](float fps) { onFPSChange(fps); });
     mUIManager->setMinMaxChangeCallback([this](float minValue, float maxValue) { onMinMaxChange(minValue, maxValue); });
+    mUIManager->setZoomChangeCallback([this](float zoomFactor, bool isZoomToFit) { onZoomChange(zoomFactor, isZoomToFit); });
     
     // Set up playback controller callback
     auto& playbackController = mDataManager->getPlaybackController();
@@ -123,13 +126,33 @@ void Application::renderFrame() {
     // Clear the screen
     mGLContext->clear();
     
+    // Update viewport in case window was resized
+    mGLRenderer->updateViewportFromGL();
+    
     // Render texture if available
     if (mCurrentTextureId != 0 && mDataManager->hasSequence()) {
         auto imageView = mDataManager->getCurrentImageView();
         if (imageView.has_value()) {
-            auto& params = mGLRenderer->getRenderingParameters();
-            uint32_t channels = imageView->getChannels();
-            mGLRenderer->renderTexturedQuad(mCurrentTextureId, channels, params);
+                    auto& uiState = mUIManager->getUIState();
+        
+        // Use the new matrix-based rendering with zoom support
+        thor::rendering::RenderingParameters renderParams(mRenderingMinValue, mRenderingMaxValue, imageView->getChannels());
+            
+            // Get current viewport dimensions
+            int viewportWidth, viewportHeight;
+            mGLRenderer->getViewport(viewportWidth, viewportHeight);
+            
+            // Create transformation matrix for image positioning and scaling
+            auto transform = thor::rendering::TransformMatrix::createImageTransform(
+                imageView->getWidth(),
+                imageView->getHeight(),
+                uiState.zoomFactor,
+                uiState.isZoomToFit,
+                viewportWidth,
+                viewportHeight
+            );
+            
+            mGLRenderer->renderQuadAt(mCurrentTextureId, transform, renderParams);
         }
     }
     
@@ -182,7 +205,7 @@ void Application::updateUIState() {
     mUIManager->updatePlaybackState(isPlaying, currentFrame, totalFrames);
     
     // Update rendering parameters
-    auto& params = mGLRenderer->getRenderingParameters();
+    thor::rendering::RenderingParameters params(mRenderingMinValue, mRenderingMaxValue, 3);
     mUIManager->updateRenderingParameters(params);
 }
 
@@ -243,7 +266,8 @@ bool Application::loadImageSequence(const std::filesystem::path& filePath,
             }
             
             // Set the auto-detected rendering parameters
-            mGLRenderer->setRenderingParameters(renderingMin, renderingMax);
+            mRenderingMinValue = renderingMin;
+            mRenderingMaxValue = renderingMax;
             
             std::cout << "Auto-detected data range: " << dataMin << " to " << dataMax 
                       << ", set rendering range: " << renderingMin << " to " << renderingMax << std::endl;
@@ -318,11 +342,14 @@ void Application::onFPSChange(float fps) {
 }
 
 void Application::onMinMaxChange(float minValue, float maxValue) {
-    if (!mGLRenderer) {
-        return;
-    }
-    
-    mGLRenderer->setRenderingParameters(minValue, maxValue);
+    mRenderingMinValue = minValue;
+    mRenderingMaxValue = maxValue;
+}
+
+void Application::onZoomChange(float zoomFactor, bool isZoomToFit) {
+    // The zoom parameters are automatically used in renderFrame() 
+    // via the UIManager state, so no additional action needed here.
+    // This callback could be used for logging or other zoom-related actions.
 }
 
 } // namespace thor::app 

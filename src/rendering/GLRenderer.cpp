@@ -14,12 +14,12 @@ GLRenderer::GLRenderer()
     , mMaxValueUniform(-1)
     , mTextureUniform(-1)
     , mChannelsUniform(-1)
+    , mTransformUniform(-1)
     , mPositionAttribute(-1)
     , mTexCoordAttribute(-1)
     , mVAO(0)
     , mVBO(0)
     , mEBO(0)
-    , mRenderingParams()
     , mViewportWidth(0)
     , mViewportHeight(0) {
 }
@@ -35,12 +35,12 @@ GLRenderer::GLRenderer(GLRenderer&& other) noexcept
     , mMaxValueUniform(other.mMaxValueUniform)
     , mTextureUniform(other.mTextureUniform)
     , mChannelsUniform(other.mChannelsUniform)
+    , mTransformUniform(other.mTransformUniform)
     , mPositionAttribute(other.mPositionAttribute)
     , mTexCoordAttribute(other.mTexCoordAttribute)
     , mVAO(other.mVAO)
     , mVBO(other.mVBO)
     , mEBO(other.mEBO)
-    , mRenderingParams(other.mRenderingParams)
     , mViewportWidth(other.mViewportWidth)
     , mViewportHeight(other.mViewportHeight) {
     
@@ -62,12 +62,12 @@ GLRenderer& GLRenderer::operator=(GLRenderer&& other) noexcept {
         mMaxValueUniform = other.mMaxValueUniform;
         mTextureUniform = other.mTextureUniform;
         mChannelsUniform = other.mChannelsUniform;
+        mTransformUniform = other.mTransformUniform;
         mPositionAttribute = other.mPositionAttribute;
         mTexCoordAttribute = other.mTexCoordAttribute;
         mVAO = other.mVAO;
         mVBO = other.mVBO;
         mEBO = other.mEBO;
-        mRenderingParams = other.mRenderingParams;
         mViewportWidth = other.mViewportWidth;
         mViewportHeight = other.mViewportHeight;
         
@@ -104,8 +104,7 @@ bool GLRenderer::initialize() {
             throw thor::core::OpenGLError("Failed to create vertex buffers");
         }
         
-        // Set default rendering parameters
-        setRenderingParameters(0.0f, 1.0f);
+        // Default rendering parameters no longer stored as member variables
         
         mInitialized = true;
         return true;
@@ -191,63 +190,30 @@ void GLRenderer::deleteTexture(TextureID textureId) {
     }
 }
 
-void GLRenderer::renderTexturedQuad(TextureID textureId, const RenderingParameters& params) {
+
+
+
+
+
+
+
+
+void GLRenderer::renderQuadAt(TextureID textureId, const TransformMatrix& transform, 
+                             const RenderingParameters& params) {
     validateInitialized();
-    
-    if (textureId == INVALID_TEXTURE_ID) {
-        throw thor::core::OpenGLError("Invalid texture ID: " + std::to_string(textureId));
-    }
+    validateTextureId(textureId);
     
     // Use shader program
     glUseProgram(mShaderProgram);
     
-    // Set uniforms
+    // Set transformation matrix uniform
+    glUniformMatrix4fv(mTransformUniform, 1, GL_FALSE, transform.data);
+    
+    // Set other uniforms
     glUniform1f(mMinValueUniform, params.minValue);
     glUniform1f(mMaxValueUniform, params.maxValue);
     glUniform1i(mTextureUniform, 0);  // Use texture unit 0
-    glUniform1i(mChannelsUniform, 3);  // Default to 3 channels (RGB)
-    
-    // Bind texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textureId);
-    
-    // Bind vertex array
-    glBindVertexArray(mVAO);
-    
-    // Draw quad
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    
-    // Cleanup
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glUseProgram(0);
-    
-    // Check for OpenGL errors
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        throw thor::core::OpenGLError("Failed to render textured quad: OpenGL error " + std::to_string(error));
-    }
-}
-
-void GLRenderer::renderTexturedQuad(TextureID textureId, float minValue, float maxValue) {
-    renderTexturedQuad(textureId, RenderingParameters(minValue, maxValue));
-}
-
-void GLRenderer::renderTexturedQuad(TextureID textureId, uint32_t channels, const RenderingParameters& params) {
-    validateInitialized();
-    
-    if (textureId == INVALID_TEXTURE_ID) {
-        throw thor::core::OpenGLError("Invalid texture ID: " + std::to_string(textureId));
-    }
-    
-    // Use shader program
-    glUseProgram(mShaderProgram);
-    
-    // Set uniforms
-    glUniform1f(mMinValueUniform, params.minValue);
-    glUniform1f(mMaxValueUniform, params.maxValue);
-    glUniform1i(mTextureUniform, 0);  // Use texture unit 0
-    glUniform1i(mChannelsUniform, static_cast<int>(channels));  // Set actual channel count
+    glUniform1i(mChannelsUniform, static_cast<int>(params.channels));
     
     // Bind texture
     glActiveTexture(GL_TEXTURE0);
@@ -265,18 +231,12 @@ void GLRenderer::renderTexturedQuad(TextureID textureId, uint32_t channels, cons
     // Check for OpenGL errors
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) {
-        throw thor::core::OpenGLError("Failed to render textured quad: OpenGL error " + std::to_string(error));
+        throw thor::core::OpenGLError("Failed to render quad: OpenGL error " + std::to_string(error));
     }
 }
 
-void GLRenderer::setRenderingParameters(const RenderingParameters& params) {
-    mRenderingParams = params;
-}
 
-void GLRenderer::setRenderingParameters(float minValue, float maxValue) {
-    mRenderingParams.minValue = minValue;
-    mRenderingParams.maxValue = maxValue;
-}
+
 
 void GLRenderer::setViewport(int width, int height) {
     glViewport(0, 0, width, height);
@@ -287,6 +247,13 @@ void GLRenderer::setViewport(int width, int height) {
 void GLRenderer::getViewport(int& width, int& height) const {
     width = mViewportWidth;
     height = mViewportHeight;
+}
+
+void GLRenderer::updateViewportFromGL() {
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    mViewportWidth = viewport[2];
+    mViewportHeight = viewport[3];
 }
 
 bool GLRenderer::isValidTexture(TextureID textureId) const {
@@ -359,6 +326,7 @@ bool GLRenderer::createShaderProgram() {
     mMaxValueUniform = glGetUniformLocation(mShaderProgram, "u_maxValue");
     mTextureUniform = glGetUniformLocation(mShaderProgram, "u_texture");
     mChannelsUniform = glGetUniformLocation(mShaderProgram, "u_channels");
+    mTransformUniform = glGetUniformLocation(mShaderProgram, "u_transform");
     
     // Get attribute locations
     mPositionAttribute = glGetAttribLocation(mShaderProgram, "a_position");
@@ -439,13 +407,13 @@ std::string GLRenderer::getProgramError(uint32_t program) const {
 }
 
 bool GLRenderer::createVertexBuffers() {
-    // Quad vertices (position + texture coordinates)
+    // Unit quad vertices in model space (-0.5 to +0.5) + texture coordinates
     float vertices[] = {
-        // Position    // Texture Coords
-        -1.0f, -1.0f,   0.0f, 0.0f,  // Bottom left
-         1.0f, -1.0f,   1.0f, 0.0f,  // Bottom right
-         1.0f,  1.0f,   1.0f, 1.0f,  // Top right
-        -1.0f,  1.0f,   0.0f, 1.0f   // Top left
+        // Position      // Texture Coords
+        -0.5f, -0.5f,    0.0f, 0.0f,  // Bottom left
+         0.5f, -0.5f,    1.0f, 0.0f,  // Bottom right
+         0.5f,  0.5f,    1.0f, 1.0f,  // Top right
+        -0.5f,  0.5f,    0.0f, 1.0f   // Top left
     };
     
     // Indices for quad (two triangles)
@@ -551,10 +519,13 @@ const char* GLRenderer::getVertexShaderSource() {
 layout (location = 0) in vec2 a_position;
 layout (location = 1) in vec2 a_texCoord;
 
+uniform mat4 u_transform;
+
 out vec2 v_texCoord;
 
 void main() {
-    gl_Position = vec4(a_position, 0.0, 1.0);
+    // Transform from model space through world space to screen space
+    gl_Position = u_transform * vec4(a_position, 0.0, 1.0);
     // Flip Y coordinate to correct upside-down display
     v_texCoord = vec2(a_texCoord.x, 1.0 - a_texCoord.y);
 }
@@ -604,6 +575,95 @@ void GLRenderer::validateTextureId(TextureID textureId) const {
 void GLRenderer::releaseResources() {
     destroyVertexBuffers();
     destroyShaderProgram();
+}
+
+// TransformMatrix static method implementations
+TransformMatrix TransformMatrix::createWorldToScreen(
+    float worldX, float worldY,
+    float scaleX, float scaleY,
+    int viewportWidth, int viewportHeight) {
+    
+    TransformMatrix matrix;
+    
+    // Convert world space to normalized device coordinates (NDC)
+    // World space: origin at window center, 1 unit = 1 pixel
+    // Screen space: [-1, 1] range for OpenGL
+    
+    // Scale from world units to NDC
+    float ndcScaleX = 2.0f / static_cast<float>(viewportWidth);
+    float ndcScaleY = 2.0f / static_cast<float>(viewportHeight);
+    
+    // Combine scaling transformations
+    float finalScaleX = scaleX * ndcScaleX;
+    float finalScaleY = scaleY * ndcScaleY;
+    
+    // Convert world position to NDC offset
+    float ndcX = worldX * ndcScaleX;
+    float ndcY = worldY * ndcScaleY;
+    
+    // Create transformation matrix (column-major order for OpenGL)
+    matrix.data[0] = finalScaleX;  // Scale X
+    matrix.data[1] = 0.0f;
+    matrix.data[2] = 0.0f;
+    matrix.data[3] = 0.0f;
+    
+    matrix.data[4] = 0.0f;
+    matrix.data[5] = finalScaleY;  // Scale Y
+    matrix.data[6] = 0.0f;
+    matrix.data[7] = 0.0f;
+    
+    matrix.data[8] = 0.0f;
+    matrix.data[9] = 0.0f;
+    matrix.data[10] = 1.0f;
+    matrix.data[11] = 0.0f;
+    
+    matrix.data[12] = ndcX;        // Translation X
+    matrix.data[13] = ndcY;        // Translation Y
+    matrix.data[14] = 0.0f;
+    matrix.data[15] = 1.0f;
+    
+    return matrix;
+}
+
+TransformMatrix TransformMatrix::createImageTransform(
+    int imageWidth, int imageHeight,
+    float zoomFactor, bool zoomToFit,
+    int viewportWidth, int viewportHeight) {
+    
+    // Calculate aspect ratios
+    float imageAspect = static_cast<float>(imageWidth) / static_cast<float>(imageHeight);
+    float viewportAspect = static_cast<float>(viewportWidth) / static_cast<float>(viewportHeight);
+    
+    // Calculate scale factors for centering and aspect ratio preservation
+    float scaleX, scaleY;
+    
+    if (zoomToFit) {
+        // Scale to fit while preserving aspect ratio
+        if (imageAspect > viewportAspect) {
+            // Image is wider than viewport - fit to width
+            scaleX = static_cast<float>(viewportWidth);
+            scaleY = static_cast<float>(viewportWidth) / imageAspect;
+        } else {
+            // Image is taller than viewport - fit to height
+            scaleX = static_cast<float>(viewportHeight) * imageAspect;
+            scaleY = static_cast<float>(viewportHeight);
+        }
+    } else {
+        // Use explicit zoom factor while preserving aspect ratio
+        float baseScaleX, baseScaleY;
+        if (imageAspect > viewportAspect) {
+            baseScaleX = static_cast<float>(viewportWidth);
+            baseScaleY = static_cast<float>(viewportWidth) / imageAspect;
+        } else {
+            baseScaleX = static_cast<float>(viewportHeight) * imageAspect;
+            baseScaleY = static_cast<float>(viewportHeight);
+        }
+        scaleX = baseScaleX * zoomFactor;
+        scaleY = baseScaleY * zoomFactor;
+    }
+    
+    // Center the image (position 0,0 in world space = center of viewport)
+    return createWorldToScreen(0.0f, 0.0f, scaleX, scaleY, viewportWidth, viewportHeight);
 }
 
 } // namespace thor::rendering 

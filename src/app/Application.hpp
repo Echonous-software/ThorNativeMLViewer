@@ -58,6 +58,10 @@ private:
     // Current texture for rendering
     uint32_t mCurrentTextureId;
     
+    // Current rendering parameters
+    float mRenderingMinValue;
+    float mRenderingMaxValue;
+    
     void renderFrame();
     void updateTexture();
     
@@ -68,6 +72,7 @@ private:
     void onSetFrame(uint32_t frameIndex);
     void onFPSChange(float fps);
     void onMinMaxChange(float minValue, float maxValue);
+    void onZoomChange(float zoomFactor, bool isZoomToFit);
     
     // Component initialization and wiring
     bool initializeComponents();

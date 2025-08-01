@@ -29,6 +29,7 @@ target_link_libraries(thor_tests
         GTest::gmock
         fmt::fmt
         glfw
+        imgui::imgui
         ${OPENGL_LIBRARIES}
 )
 
@@ -50,6 +51,7 @@ target_sources(thor_tests
         data/test_data_manager.cpp
         playback/test_playback_controller.cpp
         rendering/test_gl_renderer.cpp
+        ui/test_ui_manager.cpp
         # Source files needed for testing
         ${CMAKE_SOURCE_DIR}/src/data/ImageSequence.cpp
         ${CMAKE_SOURCE_DIR}/src/data/ImageLoader.cpp
@@ -57,6 +59,7 @@ target_sources(thor_tests
         ${CMAKE_SOURCE_DIR}/src/playback/PlaybackController.cpp
         ${CMAKE_SOURCE_DIR}/src/rendering/GLContext.cpp
         ${CMAKE_SOURCE_DIR}/src/rendering/GLRenderer.cpp
+        ${CMAKE_SOURCE_DIR}/src/ui/UIManager.cpp
         ${CMAKE_SOURCE_DIR}/src/third_party/glad/src/glad.c
 )
 
