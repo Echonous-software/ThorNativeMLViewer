@@ -5,22 +5,7 @@ project(ThorNativeMLViewer
     DESCRIPTION "Native ML model visualization and debugging tool"
     LANGUAGES C CXX)
 
-# Set C++20 standard
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Export compile commands for IDE support
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-# Include custom CMake modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
-# Include compiler options
-include(CompilerOptions)
-
 # vcpkg integration
-find_package(PkgConfig REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -35,6 +20,18 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
 )
+# Ignore GL deprecation warnings on macOS
+if(APPLE)
+    get_target_property(THOR_COMPILE_DEFINITIONS ${PROJECT_NAME} COMPILE_DEFINITIONS)
+    if (THOR_COMPILE_DEFINITIONS)
+        list(APPEND THOR_COMPILE_DEFINITIONS "GL_SILENCE_DEPRECATION")
+    else()
+        set(THOR_COMPILE_DEFINITIONS "GL_SILENCE_DEPRECATION")
+    endif()
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        COMPILE_DEFINITIONS "${THOR_COMPILE_DEFINITIONS}"
+    )
+endif()
 
 # Include directories
 target_include_directories(${PROJECT_NAME}
@@ -64,14 +61,14 @@ endif()
 target_sources(${PROJECT_NAME}
     PRIVATE
         src/main.cpp
-        src/rendering/GLContext.cpp
-        src/ui/UIManager.cpp
         src/app/Application.cpp
-        src/data/ImageSequence.cpp
-        src/data/ImageLoader.cpp
+        src/app/AppState.cpp
+        src/app/PlaybackController.cpp
+        src/core/Math.cpp
         src/data/DataManager.cpp
-        src/playback/PlaybackController.cpp
-        src/rendering/GLRenderer.cpp
+        src/rendering/opengl/GLRenderer.cpp
+        src/rendering/Renderer.cpp
+        src/ui/UserInterface.cpp
         src/third_party/glad/src/glad.c
 )
 
