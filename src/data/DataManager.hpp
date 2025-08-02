@@ -2,38 +2,29 @@
 
 #include <memory>
 #include <filesystem>
+#include <optional>
+#include <app/AppState.hpp>
 #include <core/Math.hpp>
-#include <core/Error.hpp>
+#include <data/DataType.hpp>
+#include <data/ImageSize.hpp>
 
 namespace echonous {
 
 class ImageSequence;
-
-enum class DataType {
-    U8,
-    F32
-};
-
-class DataError : public Error {
-public:
-    DataError(const char* message) : Error(message) {}
-    DataError(const std::string& message) : Error(message) {}
-};
-
-class DataReadError : public DataError {
-public:
-    DataReadError(const char* message) : DataError(message) {}
-    DataReadError(const std::string& message) : DataError(message) {}
-};
-
+class ImageView;
 class DataManager {
+
+    std::optional<std::filesystem::path> mCurrentFilePath;
+
     /* nullable, current image sequence */
     std::unique_ptr<ImageSequence> mImageSequence;
 public:
+    DataManager();
     ~DataManager();
 
-    void loadRawImageSequence(std::filesystem::path path, IVec2 size, DataType dataType);
-    std::optional<ImageSequence*> currentImageSequence() const;
+    void loadRawImageSequence(std::filesystem::path path, ImageSize size, DataType dataType);
+    void closeImageSequence();
+    void updateState(AppState& state);
 };
 
 } // namespace echonous

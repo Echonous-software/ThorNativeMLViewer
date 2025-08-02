@@ -65,7 +65,13 @@ target_sources(${PROJECT_NAME}
         src/app/AppState.cpp
         src/app/PlaybackController.cpp
         src/core/Math.cpp
+        src/data/ByteOrder.cpp
+        src/data/DataError.cpp
         src/data/DataManager.cpp
+        src/data/DataType.cpp
+        src/data/ImageSequence.cpp
+        src/data/ImageView.cpp
+        src/data/ImageSize.cpp
         src/rendering/opengl/GLRenderer.cpp
         src/rendering/Renderer.cpp
         src/ui/UserInterface.cpp

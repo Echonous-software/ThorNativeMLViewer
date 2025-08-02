@@ -1,4 +1,7 @@
 #include <rendering/opengl/GLRenderer.hpp>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 namespace echonous {
 
@@ -8,9 +11,12 @@ GLRenderer::GLRenderer(std::string_view name, IVec2 windowSize) :
     initializeGLFW();
     openWindow(name, windowSize);
     createContext();
+    initializeImGuiBackend();
 }
 
-GLRenderer::~GLRenderer() {}
+GLRenderer::~GLRenderer() {
+    close();
+}
 
 std::string_view GLRenderer::name() const {
     return "OpenGL";
@@ -18,11 +24,26 @@ std::string_view GLRenderer::name() const {
 
 void GLRenderer::beginFrame() {
     glfwPollEvents();
+
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void GLRenderer::render(const RenderState& state) {}
+void GLRenderer::render(const RenderState& state) {
+
+    bool show_demo_window = true;
+    if (show_demo_window) {
+        ImGui::ShowDemoWindow(&show_demo_window);
+    }
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 void GLRenderer::endFrame() {
     glfwSwapBuffers(mWindow.get());
@@ -32,9 +53,34 @@ bool GLRenderer::shouldClose() const {
     return glfwWindowShouldClose(mWindow.get());
 }
 
+void GLRenderer::close() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    mWindow.reset();
+    glfwTerminate();
+}
+
 void GLRenderer::initializeGLFW() {
     if (glfwInit() == GLFW_FALSE) {
         throw RendererError("Failed to initialize GLFW");
+    }
+}
+
+void GLRenderer::initializeImGuiBackend() {
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    if (!ImGui_ImplGlfw_InitForOpenGL(mWindow.get(), true)) {
+        throw RendererError("Failed to initialize ImGui GLFW backend");
+    }
+
+    if (!ImGui_ImplOpenGL3_Init("#version 330")) {
+        ImGui_ImplGlfw_Shutdown();
+        throw RendererError("Failed to initialize ImGui OpenGL3 backend");
     }
 }
 

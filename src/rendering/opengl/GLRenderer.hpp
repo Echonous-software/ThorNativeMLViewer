@@ -19,10 +19,12 @@ public:
     void render(const RenderState& state) override;
     void endFrame() override;
     bool shouldClose() const override;
+    void close() override;
 
 
 private:
     void initializeGLFW();
+    void initializeImGuiBackend();
     void openWindow(std::string_view title, IVec2 size);
     void createContext();
 

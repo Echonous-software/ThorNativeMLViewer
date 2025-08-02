@@ -23,6 +23,7 @@ public:
     virtual void render(const RenderState& state) = 0;
     virtual void endFrame() = 0;
     virtual bool shouldClose() const = 0;
+    virtual void close() = 0;
 };
 
 std::unique_ptr<Renderer> GetPlatformRenderer(std::string_view name, IVec2 windowSize);
